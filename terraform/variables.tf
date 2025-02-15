@@ -97,3 +97,9 @@ variable "public_access_cidrs" {
   type        = list(string)
   default     = []
 }
+
+variable "karpenter_chart_version" {
+  type        = string
+  description = "Which version of the Karpenter Helm chart to install"
+  default     = "1.1.2"
+}

@@ -1,0 +1,29 @@
+# nodepool-arm64.yaml
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: arm64-nodepool
+spec:
+  template:
+    metadata:
+      labels:
+        dedicated: arm64-workloads
+    spec:
+      expireAfter: 720h0m0s   # retire nodes after 30 days
+      nodeClassRef:
+        group: karpenter.k8s.aws
+        kind: EC2NodeClass
+        name: arm64-ec2nodeclass
+      requirements:
+        - key: "kubernetes.io/arch"
+          operator: In
+          values: ["arm64"]
+        - key: "karpenter.sh/capacity-type"
+          operator: In
+          values: ["spot", "on-demand"]
+  limits:
+    cpu: "500"       # Limit total CPU to 500 cores for ARM
+    memory: "500Gi"  # Limit memory to 500 GiB
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    consolidateAfter: 30s

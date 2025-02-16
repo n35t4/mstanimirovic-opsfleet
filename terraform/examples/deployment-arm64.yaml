@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arm64-nginx
+  labels:
+    app: arm64-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arm64-nginx
+  template:
+    metadata:
+      labels:
+        app: arm64-nginx
+    spec:
+      # Match the label from your NodePool
+      nodeSelector:
+        dedicated: arm64-workloads
+
+      containers:
+      - name: arm64-nginx
+        # Official nginx:stable supports multiple architectures
+        image: nginx:stable
+        ports:
+        - containerPort: 80

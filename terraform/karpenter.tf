@@ -17,26 +17,26 @@ module "karpenter" {
   tags = var.tags
 }
 
-provider "aws" {
-  region = "us-east-1"
-  alias  = "virginia"
-}
+# provider "aws" {
+#   region = "us-east-1"
+#   alias  = "virginia"
+# }
 
-data "aws_ecrpublic_authorization_token" "token" {
-  provider = aws.virginia
-}
+# data "aws_ecrpublic_authorization_token" "token" {
+#   provider = aws.virginia
+# }
 
 resource "helm_release" "karpenter" {
   namespace        = "karpenter"
   create_namespace = true
   upgrade_install  = true
 
-  name                = "karpenter"
-  chart               = "karpenter"
-  repository          = "oci://public.ecr.aws/karpenter"
-  repository_username = data.aws_ecrpublic_authorization_token.token.user_name
-  repository_password = data.aws_ecrpublic_authorization_token.token.password
-  version             = var.karpenter_chart_version
+  name       = "karpenter"
+  chart      = "karpenter"
+  repository = "oci://public.ecr.aws/karpenter"
+  #   repository_username = data.aws_ecrpublic_authorization_token.token.user_name
+  #   repository_password = data.aws_ecrpublic_authorization_token.token.password
+  version = var.karpenter_chart_version
 
   values = [
     <<-EOT
@@ -51,4 +51,42 @@ resource "helm_release" "karpenter" {
         eks.amazonaws.com/role-arn: ${module.karpenter.iam_role_arn}
     EOT
   ]
+}
+
+resource "kubernetes_manifest" "ec2nodeclass_x86" {
+  manifest = yamldecode(
+    templatefile("${path.module}/karpenter/ec2nodeclass-x86.yaml", {
+      cluster_name = module.eks.cluster_name
+      node_role    = module.karpenter.node_iam_role_name
+      environment  = var.environment
+      owner        = var.team
+      project_repo = var.project_repo
+      project      = var.project
+    })
+  )
+  depends_on = [resource.helm_release.karpenter]
+}
+
+resource "kubernetes_manifest" "nodepool_x86" {
+  manifest   = yamldecode(file("${path.module}/karpenter/nodepool-x86.yaml"))
+  depends_on = [resource.kubernetes_manifest.ec2nodeclass_x86]
+}
+
+resource "kubernetes_manifest" "ec2nodeclass_arm64" {
+  manifest = yamldecode(
+    templatefile("${path.module}/karpenter/ec2nodeclass-arm64.yaml", {
+      cluster_name = module.eks.cluster_name
+      node_role    = module.karpenter.node_iam_role_name
+      environment  = var.environment
+      owner        = var.team
+      project_repo = var.project_repo
+      project      = var.project
+    })
+  )
+  depends_on = [resource.helm_release.karpenter]
+}
+
+resource "kubernetes_manifest" "nodepool_arm64" {
+  manifest   = yamldecode(file("${path.module}/karpenter/nodepool-arm64.yaml"))
+  depends_on = [resource.kubernetes_manifest.ec2nodeclass_arm64]
 }

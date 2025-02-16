@@ -1,0 +1,32 @@
+# ec2nodeclass-arm64.yaml
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: arm64-ec2nodeclass
+  labels:
+    app.kubernetes.io/name: arm64-ec2nodeclass
+    app.kubernetes.io/part-of: karpenter
+  annotations:
+    kubernetes.io/description: "General purpose EC2NodeClass for running arm64 instances"
+spec:
+  role: "${node_role}"
+  amiSelectorTerms:
+    - alias: al2023@latest
+
+  # Use the "discovery" tags from your EKS module
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "${cluster_name}"
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "${cluster_name}"
+
+  # Optionally specify instanceProfile, launchTemplateName, or tags
+  tags:
+    karpenter.sh/discovery: "${cluster_name}"
+    Arch: "arm64"
+    Environment: "${environment}"
+    Provisioner: "terraform"
+    Owner: "${owner}"
+    SourcePath: "${project_repo}"
+    Project: "${project}"

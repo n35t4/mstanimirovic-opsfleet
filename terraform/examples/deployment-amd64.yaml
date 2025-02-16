@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: x86-nginx
+  labels:
+    app: x86-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: x86-nginx
+  template:
+    metadata:
+      labels:
+        app: x86-nginx
+    spec:
+      nodeSelector:
+        dedicated: x86-workloads
+
+      containers:
+      - name: x86-nginx
+        image: nginx:stable
+        ports:
+        - containerPort: 80
